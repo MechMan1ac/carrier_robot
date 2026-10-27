@@ -2,6 +2,9 @@ import cv2
 from ultralytics import YOLO
 import pyrealsense2 as rs
 import numpy as np
+import serial
+
+ser = serial.Serial('COM4', baudrate=115200, timeout=1)  
 
 model = YOLO('yolo26n.pt')
 pipe = rs.pipeline()
@@ -36,7 +39,7 @@ while True:
     closest_person_center = None
     target_person_distance = 0.0
     closest_person_conf = None
-    min_distance = float('inf')
+    min_distance = 1.5
 
     results = model.track(color_image, classes=[0], persist=True, verbose=False, tracker="bytetrack.yaml") 
 
@@ -47,7 +50,7 @@ while True:
         
         for box, track_id, conf in zip(boxes, track_ids, confs):
             x1, y1, x2, y2 = map(int, box)
-            track_id = int0055(track_id)
+            track_id = int(track_id)
             center_pt = ((x1 + x2) // 2, (y1 + y2) // 2)
             conf = float(conf)
 
@@ -86,14 +89,22 @@ while True:
         if round(target_person_distance, 2) > 0.5 and round(camera_distance, 2) > 0.5:
             if delta_x > 0 and delta_x > 50:
                 cv2.putText(color_image, "Turn Right", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                ser.write(b'r') #Turn Right
             elif delta_x < 0 and delta_x < -50:
                 cv2.putText(color_image, "Turn Left", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                ser.write(b'l') #Turn Left
             else:
                 cv2.putText(color_image, "Go Straight", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                ser.write(b'f') #Move Forward
         else:
             cv2.putText(color_image, "Stop", (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+            ser.write(b's') #Stop!
+    else:
+        ser.write(b's') #Stop!
 
     cv2.imshow("YOLO Live Depthcam", color_image)
+
+    
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
