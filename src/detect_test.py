@@ -104,9 +104,8 @@ while True:
 
     cv2.imshow("YOLO Live Depthcam", color_image)
 
-    
-
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
+    
 pipe.stop()
 cv2.destroyAllWindows()
