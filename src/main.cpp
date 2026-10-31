@@ -6,15 +6,6 @@ const int channelAmount = 10; // Number of channels in the PPM signal
 
 PPMReader ppm(interruptPin, channelAmount); // Create a PPMReader object with the interrupt pin and number of channels
 
-// LED pins
-#define FORWARD_LED_PIN 5
-#define RIGHT_LED_PIN 3
-#define LEFT_LED_PIN 6
-
-const int pulseMin = 1000;  // microseconds (us)
-const int pulseMax = 2000;
-const int timeout = 1;  // microseconds (us)
-
 int ch2_value;
 int ch4_value;
 int ch6_value;
@@ -27,8 +18,6 @@ public:
   }
 
   void write(int value) {
-    value = map(value, 1000, 2000, 0, 255); // Map the value from the range of 1000-2000 to 0-255
-    value = constrain(value, 0, 255); // Ensure the value is within the range of 0-255
     analogWrite(_pin, value);
   }
 
@@ -36,12 +25,17 @@ private:
   int _pin;
 };
 
+Motor leftMotor(3); // Create a Motor object for the left motor on pin 3
+Motor rightMotor(6); // Create a Motor object for the right motor on pin 6
+
+#define LEFT_DIR_PIN 7 // Pin for left motor direction control
+#define RIGHT_DIR_PIN 8 // Pin for right motor direction control
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
-  pinMode(FORWARD_LED_PIN, OUTPUT);
-  pinMode(RIGHT_LED_PIN, OUTPUT);
-  pinMode(LEFT_LED_PIN, OUTPUT);
+  pinMode(LEFT_DIR_PIN, OUTPUT);
+  pinMode(RIGHT_DIR_PIN, OUTPUT);
 }
 
 void loop() {
@@ -50,38 +44,54 @@ void loop() {
   ch4_value = ppm.latestValidChannelValue(4, 1500);
   ch6_value = ppm.latestValidChannelValue(6, 1500);
 
-  // Serial.print("CH2: ");
-  // Serial.print(ch2_value);
-  // Serial.print(" CH4: ");
-  // Serial.print(ch4_value);
-  // Serial.print(" CH6: ");
-  // Serial.println(ch6_value);
-
   if(ch6_value == 1000) { //Autonomous mode enabled
     if (Serial.available()) {
       char c = Serial.read();
       if (c == 'f') { //Move forward
-        analogWrite(FORWARD_LED_PIN, 255);
-        analogWrite(RIGHT_LED_PIN, 0);
-        analogWrite(LEFT_LED_PIN, 0);
+        digitalWrite(LEFT_DIR_PIN, HIGH); // Set left motor direction to forward
+        digitalWrite(RIGHT_DIR_PIN, HIGH); // Set right motor direction to forward
+        leftMotor.write(128);
+        rightMotor.write(128);
       }else if (c == 'r') { //Turn right
-        analogWrite(RIGHT_LED_PIN, 255);
-        analogWrite(FORWARD_LED_PIN, 0);
-        analogWrite(LEFT_LED_PIN, 0);
+        digitalWrite(LEFT_DIR_PIN, HIGH); // Set left motor direction to forward
+        digitalWrite(RIGHT_DIR_PIN, LOW); // Set right motor direction to backward
+        leftMotor.write(128);
+        rightMotor.write(128);
       }else if (c == 'l') { //Turn left
-        analogWrite(LEFT_LED_PIN, 255);
-        analogWrite(FORWARD_LED_PIN, 0);
-        analogWrite(RIGHT_LED_PIN, 0);
-      }else if (c == 's') {
-        analogWrite(FORWARD_LED_PIN, 0);
-        analogWrite(RIGHT_LED_PIN, 0);
-        analogWrite(LEFT_LED_PIN, 0);
+        digitalWrite(LEFT_DIR_PIN, LOW); // Set left motor direction to backward
+        digitalWrite(RIGHT_DIR_PIN, HIGH); // Set right motor direction to forward
+        leftMotor.write(128);
+        rightMotor.write(128);
+      }else if (c == 's') { //Stop
+        leftMotor.write(0);
+        rightMotor.write(0);
       }
     }
   }else { //Autonomous mode disabled
-    analogWrite(FORWARD_LED_PIN, 0);
-    analogWrite(RIGHT_LED_PIN, 0);
-    analogWrite(LEFT_LED_PIN, 0);
+    if(ch2_value > 1500) { //Move forward
+      digitalWrite(LEFT_DIR_PIN, HIGH); // Set left motor direction to forward
+      digitalWrite(RIGHT_DIR_PIN, HIGH); // Set right motor direction to forward
+      leftMotor.write(map(ch2_value, 1500, 2000, 0, 255));
+      rightMotor.write(map(ch2_value, 1500, 2000, 0, 255));
+    }else if(ch2_value < 1500) { //Move backward
+      digitalWrite(LEFT_DIR_PIN, LOW); // Set left motor direction to backward
+      digitalWrite(RIGHT_DIR_PIN, LOW); // Set right motor direction to backward
+      leftMotor.write(map(ch2_value, 1000, 1500, 255, 0));
+      rightMotor.write(map(ch2_value, 1000, 1500, 255, 0));
+    }else if (ch4_value > 1500) { //Turn right
+      digitalWrite(LEFT_DIR_PIN, HIGH); // Set left motor direction to forward
+      digitalWrite(RIGHT_DIR_PIN, LOW); // Set right motor direction to backward
+      leftMotor.write(map(ch4_value, 1500, 2000, 0, 255));
+      rightMotor.write(map(ch4_value, 1500, 2000, 0, 255));
+    }else if (ch4_value < 1500) { //Turn left
+      digitalWrite(LEFT_DIR_PIN, LOW); // Set left motor direction to backward
+      digitalWrite(RIGHT_DIR_PIN, HIGH); // Set right motor direction to forward
+      leftMotor.write(map(ch4_value, 1000, 1500, 255, 0));
+      rightMotor.write(map(ch4_value, 1000, 1500, 255, 0));
+    }else { //Stop
+      leftMotor.write(0);
+      rightMotor.write(0);
+    }
   }
 }
 
