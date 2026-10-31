@@ -28,8 +28,8 @@ private:
 Motor leftMotor(3); // Create a Motor object for the left motor on pin 3
 Motor rightMotor(6); // Create a Motor object for the right motor on pin 6
 
-#define LEFT_DIR_PIN 7 // Pin for left motor direction control
-#define RIGHT_DIR_PIN 8 // Pin for right motor direction control
+const int LEFT_DIR_PIN = 7; // Pin for left motor direction control
+const int RIGHT_DIR_PIN = 8; // Pin for right motor direction control
 
 void setup() {
   // put your setup code here, to run once:
@@ -94,3 +94,4 @@ void loop() {
     }
   }
 }
+
